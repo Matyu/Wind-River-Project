@@ -22,6 +22,7 @@ HAUTEUR = 450 # Hauteur fenÃªtre
 LARGEUR = 727.5 # Largeur fenÃªtre
 
 
+
 def close_app():
   """ Fonction fermant le port sÃ©rie """
 	#ser.close()
