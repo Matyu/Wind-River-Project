@@ -1,137 +1,130 @@
 #!/usr/bin/python
-# -*- coding:utf-8 *-
+# -*- coding:Utf-8  -*
 
-""" 
-Ici est la première version de l'interface
-"""
+#Programme python pour arduino
 
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from PyQt4 import QtGui
-from PyQt4.QtOpenGL import *
-from PyQt4 import QtCore
 import sys
+from PyQt4 import QtGui
+from PyQt4 import QtCore
 import serial
+import time
 
-#ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1) # Variable qui Ã©tabli la connexion entre l'ordinateur et la carte ARDUINO ( port sÃ©rie )
-
-app = QtGui.QApplication(sys.argv) # Variable pour crÃ©er l'application
-
-HAUTEUR = 450 # Hauteur fenÃªtre
-LARGEUR = 727.5 # Largeur fenÃªtre
+tm = time.clock()
+tm2 = time.clock()
 
 
+ser = serial.Serial('/dev/ttyACM0', 115200)
+app = QtGui.QApplication(sys.argv)
 
-def close_app():
-  """ Fonction fermant le port sÃ©rie """
-	#ser.close()
-	return app.exec_()
+main_window = QtGui.QWidget()
+main_window.resize(500, 400)
+main_window.setWindowTitle("Interface GUI pour controler carte Arduino")
 
-class Widget(QGLWidget):
-	""" Classe hÃ©ritÃ©e de QLGLWidget qui contient l'environnement 3D """
-	def __init__(self, parent):
-		""" COnstructeur de la classe """
-		
-		QGLWidget.__init__(self, parent) # Appel constructeur classe-mÃ¨re
-		self.resize(LARGEUR, HAUTEUR)
+lab1 = QtGui.QLabel("90 D", main_window)
+lab2 = QtGui.QLabel("90 D", main_window)
 
-	def initializeGL(self):
-		""" Fonction d'initialisation ( appelÃ©e une seule fois au dÃ©but  !) """
-		glShadeModel(GL_SMOOTH)
-		glClearColor(0.0, 0.0, 0.0, 0.5)
-		glClearDepth(1.0)
-		glEnable(GL_DEPTH_TEST)
-		glDepthFunc(GL_LEQUAL)
-		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+lab1.move(300,80)
+lab2.move(130,210)
 
-	def paintGL(self):
-		""" Fonction qui recrÃ©e l'environnement 3D """
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		glLoadIdentity()
+sld_hb = QtGui.QSlider(QtCore.Qt.Horizontal, main_window)
+sld_dg = QtGui.QSlider(QtCore.Qt.Vertical, main_window)
 
-		glTranslatef(1.0, -3.0, 0.0)
+sld_hb.setGeometry(10, 140, 250, 50)
+sld_dg.setGeometry(265, 15, 50, 250)
 
-		glColor3f(0.0, 0.0, 1.0)
+axe_x = QtGui.QLabel(main_window)
+axe_y = QtGui.QLabel(main_window)
+sld_hb.setValue(50)
+sld_dg.setValue(50)
 
-		glBegin(GL_QUADS) # Quads du bas ( sol )
-		
-		glVertex3f(1.0,-1.0,0.0)
-		glVertex3f(-1.0,1.0,0.0)
-		glVertex3f(1.0,1.0,0.0)
-		glVertex3f(-1.0,-1.0,0.0)
+reset = QtGui.QPushButton("Reset", main_window)
+reset.move(25, 200)
 
-		glEnd()
-		"""
-
-		glBegin(GL_QUADS) # Quads du fond ( fond )
-		
-		glColor3f(1.0,0.0,0.0)
-
-		glEnd()
+cmd = QtGui.QLineEdit(main_window)
+cmd.setGeometry(10,300, 300, 40)
 
 
-		glBegin(GL_QUADS) # Quads de droite ( mur de droite )
-		
-		glColor3f(0.0,1.0,0.0)
+send = QtGui.QPushButton("Send", main_window)
+send.move(330, 310)
 
-		glEnd()
-		
+def rst():
+    sld_hb.setValue(50)
+    sld_dg.setValue(50)
 
-		glBegin(GL_QUADS) # Quads de gauche ( mur de gauche )
-		
-		glColor3f(0.0,1.0,0.0)
+def sender(): 
+    string = cmd.text()
+    if not ser.isOpen():
+        ser.open()
+    string = string + "\n"
+    cmd.setText(" ")
+    ser.write(string)
 
-		glEnd()
-		"""
-		glFlush()
+def val_axe__changed(val):
+    global tm2
+    tm_local = time.clock()
+    val = float(val)
+    a = val * 180.0 / 100.0
+    a = int(a)
+    a = 180 - a
+    lab2.setText(str(a) + " D")
+    if tm_local - tm2 > 0.03:
+        string = ';' + str(a) + "\n"
+        if not ser.isOpen():
+            ser.open()
+        ser.write(string)
+        tm2 = time.clock()
 
-	def resizeGL(self, w, h):
-		""" AppelÃ©e quand l'environnement est re-dimensionnÃ©e ( ici appelÃ©e une seule car la taille de la fenÃªtre est statique. """
-		if h == 0:
-			h = 1
-		glViewport(0, 0, w, h)
+def val_axe_changed(val):
+    global tm
+    tm_local = time.clock()
+    val = float(val)
+    a = val * 180.0 / 100.0
+    a = int(a)
+    lab1.setText(str(a) + " D")
+    if tm_local- tm > 0.03:
+        string = str(a) + ";" + "\n"
+        if not ser.isOpen():
+            ser.open()
+        ser.write(string)
+        tm = time.clock()
 
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
+def val_axe_changed_():
+    val = sld_dg.value()
+    val = float(val)
+    a = val * 180.0 / 100.0
+    a = int(a)
+    lab1.setText(str(a) + " D")
+    string = str(a) + ';' + "\n"
+    if not ser.isOpen():
+        ser.open()
+    ser.write(string)
 
-		gluPerspective(45.0, float(w / h), 1.0, 532.5)
+def val_axe__changed_():
+    val = sld_hb.value()
+    val = float(val)
+    a = val * 180.0 / 100.0 
+    a = int(a)
+    a = 180 - a
+    lab2.setText(str(a) + " D")
+    string = ';' + str(a) + "\n"
+    if not ser.isOpen():
+        ser.open()
+    ser.write(string)
 
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
+    
+QtCore.QObject.connect(sld_dg, QtCore.SIGNAL('sliderReleased()'), val_axe_changed_)
+QtCore.QObject.connect(sld_hb, QtCore.SIGNAL('sliderReleased()'), val_axe__changed_)
+QtCore.QObject.connect(sld_dg, QtCore.SIGNAL('valueChanged(int)'), val_axe_changed)
+QtCore.QObject.connect(sld_hb, QtCore.SIGNAL('valueChanged(int)'), val_axe__changed)
+QtCore.QObject.connect(send, QtCore.SIGNAL('clicked()'), sender)
+QtCore.QObject.connect(reset, QtCore.SIGNAL('clicked()'), rst)
 
-	def mouseReleaseEvent(self, mouseEvent):
-		""" Fonction appelÃ©e lors du relÃ¢chement du clic de la souris, calcule les angles et envoi aux cerveaux 
-		    de la carte les angles """
-		
-		vertical = mouseEvent.y() * 90 / HAUTEUR # Calcul par les produits en croix ( proportionnalitÃ© )
-		horizontal = mouseEvent.x() * 180 / LARGEUR # IDEM
-		
-		horizontal = 180 - horizontal #  0Â° - 180Â° --> 180Â° - 0Â°
-		vertical = 90 - vertical  # Adaptation des angles selon le moteur 0Â° - 90Â° --> 90Â° - 0Â°
-		
-		horizontal = int(horizontal) # Mise en forme du pattern d'envoi
-		vertical = int(vertical) # Idem 
-		string = str(vertical) + ';' + str(horizontal) + "\n" # Idem
-		print(str(vertical))
-		print(str(horizontal))
-		#if not ser.isOpen(): # Si le port n'est pas ouvert
-			#ser.open() # On l'ouvre
-		#ser.write(string) # Envoi des angles
+main_window.show()
 
-class Interface(QtGui.QWidget):
-	""" CLasse hÃ©ritÃ©e de QWidget reprÃ©sentant la fenÃªtre. """
-	def __init__(self):
-		QtGui.QWidget.__init__(self)
-		
-		self.resize(LARGEUR, HAUTEUR) # CrÃ©ation de la fenÃªtre
-		self.setMaximumSize(LARGEUR, HAUTEUR)
-		self.setMinimumSize(LARGEUR, HAUTEUR)
-		
-		widget_3D = Widget(self) # CrÃ©ation de l'environnement 3D
-		widget_3D.initializeGL()
-		self.show()
+def close():
+    ser.close()
+    return app.exec_()
 
-window = Interface() # CrÃ©ation de la GUI
 
-sys.exit(close_app()) # Exit 
+sys.exit(close())
+
