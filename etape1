@@ -1,0 +1,136 @@
+#!/usr/bin/python
+# -*- coding:utf-8 *-
+
+""" 
+Ici est la première version de l'interface
+"""
+
+
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from PyQt4 import QtGui
+from PyQt4.QtOpenGL import *
+from PyQt4 import QtCore
+import sys
+import serial
+
+#ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1) # Variable qui Ã©tabli la connexion entre l'ordinateur et la carte ARDUINO ( port sÃ©rie )
+
+app = QtGui.QApplication(sys.argv) # Variable pour crÃ©er l'application
+
+HAUTEUR = 450 # Hauteur fenÃªtre
+LARGEUR = 727.5 # Largeur fenÃªtre
+
+
+def close_app():
+  """ Fonction fermant le port sÃ©rie """
+	#ser.close()
+	return app.exec_()
+
+class Widget(QGLWidget):
+	""" Classe hÃ©ritÃ©e de QLGLWidget qui contient l'environnement 3D """
+	def __init__(self, parent):
+		""" COnstructeur de la classe """
+		
+		QGLWidget.__init__(self, parent) # Appel constructeur classe-mÃ¨re
+		self.resize(LARGEUR, HAUTEUR)
+
+	def initializeGL(self):
+		""" Fonction d'initialisation ( appelÃ©e une seule fois au dÃ©but  !) """
+		glShadeModel(GL_SMOOTH)
+		glClearColor(0.0, 0.0, 0.0, 0.5)
+		glClearDepth(1.0)
+		glEnable(GL_DEPTH_TEST)
+		glDepthFunc(GL_LEQUAL)
+		glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+
+	def paintGL(self):
+		""" Fonction qui recrÃ©e l'environnement 3D """
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glLoadIdentity()
+
+		glTranslatef(1.0, -3.0, 0.0)
+
+		glColor3f(0.0, 0.0, 1.0)
+
+		glBegin(GL_QUADS) # Quads du bas ( sol )
+		
+		glVertex3f(1.0,-1.0,0.0)
+		glVertex3f(-1.0,1.0,0.0)
+		glVertex3f(1.0,1.0,0.0)
+		glVertex3f(-1.0,-1.0,0.0)
+
+		glEnd()
+		"""
+
+		glBegin(GL_QUADS) # Quads du fond ( fond )
+		
+		glColor3f(1.0,0.0,0.0)
+
+		glEnd()
+
+
+		glBegin(GL_QUADS) # Quads de droite ( mur de droite )
+		
+		glColor3f(0.0,1.0,0.0)
+
+		glEnd()
+		
+
+		glBegin(GL_QUADS) # Quads de gauche ( mur de gauche )
+		
+		glColor3f(0.0,1.0,0.0)
+
+		glEnd()
+		"""
+		glFlush()
+
+	def resizeGL(self, w, h):
+		""" AppelÃ©e quand l'environnement est re-dimensionnÃ©e ( ici appelÃ©e une seule car la taille de la fenÃªtre est statique. """
+		if h == 0:
+			h = 1
+		glViewport(0, 0, w, h)
+
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+
+		gluPerspective(45.0, float(w / h), 1.0, 532.5)
+
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+
+	def mouseReleaseEvent(self, mouseEvent):
+		""" Fonction appelÃ©e lors du relÃ¢chement du clic de la souris, calcule les angles et envoi aux cerveaux 
+		    de la carte les angles """
+		
+		vertical = mouseEvent.y() * 90 / HAUTEUR # Calcul par les produits en croix ( proportionnalitÃ© )
+		horizontal = mouseEvent.x() * 180 / LARGEUR # IDEM
+		
+		horizontal = 180 - horizontal #  0Â° - 180Â° --> 180Â° - 0Â°
+		vertical = 90 - vertical  # Adaptation des angles selon le moteur 0Â° - 90Â° --> 90Â° - 0Â°
+		
+		horizontal = int(horizontal) # Mise en forme du pattern d'envoi
+		vertical = int(vertical) # Idem 
+		string = str(vertical) + ';' + str(horizontal) + "\n" # Idem
+		print(str(vertical))
+		print(str(horizontal))
+		#if not ser.isOpen(): # Si le port n'est pas ouvert
+			#ser.open() # On l'ouvre
+		#ser.write(string) # Envoi des angles
+
+class Interface(QtGui.QWidget):
+	""" CLasse hÃ©ritÃ©e de QWidget reprÃ©sentant la fenÃªtre. """
+	def __init__(self):
+		QtGui.QWidget.__init__(self)
+		
+		self.resize(LARGEUR, HAUTEUR) # CrÃ©ation de la fenÃªtre
+		self.setMaximumSize(LARGEUR, HAUTEUR)
+		self.setMinimumSize(LARGEUR, HAUTEUR)
+		
+		widget_3D = Widget(self) # CrÃ©ation de l'environnement 3D
+		widget_3D.initializeGL()
+		self.show()
+
+window = Interface() # CrÃ©ation de la GUI
+
+sys.exit(close_app()) # Exit 
