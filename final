@@ -1,0 +1,154 @@
+#!/usr/bin/python
+# -*- coding:utf-8 -*
+
+"""
+Etape finale de l'interface
+"""
+
+import math
+import serial
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from PyQt4 import QtGui
+from PyQt4.QtOpenGL import *
+
+ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
+
+HAUTEUR = 90 * 5# Hauteur fenÃªtre
+LARGEUR = 180 *5# Largeur fenÃªtre
+
+
+
+class Widget(QGLWidget):
+    '''
+    Widget for drawing two spirals.
+    '''
+    
+    def __init__(self, parent):
+        QGLWidget.__init__(self, parent)
+        self.setMinimumSize(LARGEUR, HAUTEUR)
+
+    def paintGL(self):
+        '''
+        Drawing routine
+        '''
+        
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        glColor(0.0, 0.7, 0.0)
+
+        glBegin(GL_QUADS)
+        glVertex(0.36, 0.30, 0.35)
+        glVertex(0.36, 0.90, 0.35)
+        glVertex(-0.36, 0.90, 0.35)
+        glVertex(-0.36, 0.30, 0.35)
+        glEnd()        
+
+        glColor(0.5, 0.0, 0.0)
+
+        glBegin(GL_POLYGON)
+        glVertex(0.36, 0.30, 0.35)
+        glVertex(-0.36, 0.30, 0.35)
+        glColor(1.0, 0.0, 0.0)
+        glVertex(-1.0, 0.0, 0.0)
+        glVertex(-1.0, -1.0, 0.0)
+        glVertex(1.0, -1.0, 0.0)
+        glVertex(1.0, 0.0, 0.0)
+        glEnd()
+
+        glColor(0.0, 0.0, 0.5)
+
+        glBegin(GL_QUADS)
+        glVertex(0.36, 0.90, 0.35)
+        glColor(0.0, 0.0, 1.0)
+        glVertex(1.0, 0.70, 0.0)
+        glVertex(1.0, 0.0, 0.0)
+        glColor(0.0, 0.0, 0.5)
+        glVertex(0.36, 0.30, 0.35)
+        glEnd()
+
+        
+
+        glBegin(GL_QUADS)
+        glVertex(-0.36, 0.30, 0.35)
+        glVertex(-0.36, 0.90, 0.35)
+        glColor(0.0, 0.0, 1.0)
+        glVertex(-1.0, 0.60, 0.0)
+        glVertex(-1.0, 0.0, 0.0)
+        glEnd()
+
+        glFlush()
+
+    def resizeGL(self, w, h):
+        '''
+        Resize the GL window 
+        '''
+        
+        glViewport(0, 0, w, h)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(40.0, 1.0, 1.0, 30.0)
+
+    def initializeGL(self):
+        '''
+        Initialize GL
+        '''
+        
+        # set viewing projection
+        glClearColor(0.0, 0.0, 0.0, 1.0)
+        glClearDepth(1.0)
+
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(40.0, 1.0, 1.0, 30.0)
+
+    
+    def mouseReleaseEvent(self, mouseEvent):
+        x = -1
+        y = -1
+        z = -1
+        x, y, z = gluUnProject(mouseEvent.x(), mouseEvent.y(), 0, model=glGetDoublev(GL_MODELVIEW_MATRIX), view=glGetIntegerv(GL_VIEWPORT), proj=glGetDoublev(GL_PROJECTION_MATRIX))
+        x *= 100
+        y *= 100
+        if x < 0:
+            x = x * -1
+            x = 100 - x
+        else:
+            x += 100
+        if y < 0:
+            y = y * -1
+            y = 100 - y
+        else:
+            y += 100
+
+        x = x * 180 / 200
+        y = y * 90 / 200
+        print("x =>", str(x), " -- y =>", str(y)) 
+        x = int(x)
+        y = int(y)
+        x = 180 - x
+        y = 90 - y
+        string = str(y) + ';' + str(x) + "\n"
+        if not ser.isOpen():
+             ser.open()
+        ser.write(string)
+
+
+# You don't need anything below this
+class Window(QtGui.QMainWindow):
+    ''' Example class for using SpiralWidget'''
+    
+    def __init__(self):
+        QtGui.QMainWindow.__init__(self)
+        widget = Widget(self)    
+        self.setCentralWidget(widget)
+        self.resize(LARGEUR, HAUTEUR)
+        self.setMinimumSize(LARGEUR, HAUTEUR)
+        self.setMaximumSize(LARGEUR, HAUTEUR)
+        
+if __name__ == '__main__':
+    app = QtGui.QApplication(['Affichage 3D et contrÃ´le spot'])
+    window = Window()
+    window.show()
+    app.exec_()
+    ser.close()
