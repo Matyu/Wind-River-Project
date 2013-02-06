@@ -1,0 +1,119 @@
+#!/usr/bin/python
+# -*- coding:Utf-8  -*
+
+"""
+Seconde version de l'interface 
+"""
+
+import sys
+from PyQt4 import QtGui
+from PyQt4 import QtCore
+import serial
+import time
+import math
+
+app = QtGui.QApplication(sys.argv)
+
+ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
+
+def prop(number):
+  numer = float(number)
+	return number / 5.0
+
+def ret_y(number):
+	return 350 - number # !
+
+def close():
+	ser.close()
+	return app.exec_()
+
+class Interface(QtGui.QWidget):
+	def __init__(self):
+		QtGui.QWidget.__init__(self)
+		self.resize(240, 350)  # !
+		self.setMaximumSize(240, 350)
+		self.setMinimumSize(240, 350)
+		self.setWindowTitle("ContrÃ´le spot par 2D")
+
+	def paintEvent(self, paintEvent):
+		painter = QtGui.QPainter(self)
+		color = QtGui.QColor(56,78,123)
+		color.setBlue(145)
+		color.setGreen(23)
+		painter.fillRect(0, 0, 240, 150, color) #!
+		color = QtGui.QColor(23,89,45)
+		painter.fillRect(0, 150, 240, 200, color) #!
+
+	def mouseReleaseEvent(self, mouseEvent):
+		AC = -1
+		BA = -1
+		BC = -1
+		angle_horizontal = 0
+		if mouseEvent.x() < 120: # !
+			AC = 120 - mouseEvent.x()	
+		elif mouseEvent.x() == 120: #!
+			AC = 0
+		else:
+			AC = mouseEvent.x() - 120
+		if mouseEvent.x() > 120:
+			BC = ret_y(mouseEvent.y())
+			BA = BC * BC + AC * AC
+			BA = math.sqrt(BA)
+		else:
+			BA = ret_y(mouseEvent.y())
+			BC = BA * BA + AC * AC
+			BC = math.sqrt(BC)
+		AC = prop(AC)
+		BA = prop(BA)
+		BC = prop(BC)
+		if mouseEvent.x() > 120: #!
+			angle_horizontal = math.acos(AC / BA)
+		else:
+			angle_horizontal = math.acos(AC / BC)
+		angle_horizontal = math.degrees(angle_horizontal)
+
+		angle_vertical = 0
+
+		DE = -1
+		EF = -1
+		DF = -1
+
+
+		EF = 350 - mouseEvent.y() # !
+		DE = 160 # !
+		DF = EF * EF + DE * DE
+		DF = math.sqrt(DF)
+
+		DF = prop(DF)
+		EF = prop(EF)
+		DE = prop(DE)
+		
+
+		angle_vertical = math.acos(DE / DF)
+
+
+
+		angle_vertical = math.degrees(angle_vertical)
+
+		if mouseEvent.x() > 120: #!
+			angle_horizontal = 180 - angle_horizontal
+
+		angle_horizontal = 180 - angle_horizontal
+
+
+		angle_horizontal = int(angle_horizontal)
+		angle_vertical = int(angle_vertical)
+		
+		angle_vertical += 1
+		angle_horizontal += 1
+
+
+		string = str(angle_vertical) + ';' + str(angle_horizontal) + "\n"
+		if not ser.isOpen():
+			ser.open()
+		ser.write(string)
+
+interface = Interface()
+interface.show()
+
+sys.exit(close()) 
